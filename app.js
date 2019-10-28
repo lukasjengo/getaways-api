@@ -64,10 +64,10 @@ app.use(
 );
 
 // Test middleware
-app.use((req, res, next) => {
-  req.requestTime = new Date().toISOString();
-  next();
-});
+// app.use((req, res, next) => {
+//   req.requestTime = new Date().toISOString();
+//   next();
+// });
 
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);
