@@ -20,14 +20,9 @@ const app = express();
 
 app.enable('trust proxy');
 
-// app.set('view engine', 'pug');
-// app.set('views', path.join(__dirname, 'views'));
-
 // 1) GLOBAL MIDDLEWARES
 // Implement CORS
-app.use(cors());
-
-app.options('*', cors());
+app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 
 // Serving static files
 app.use('/uploads', express.static(path.join(__dirname, '/public/img')));
