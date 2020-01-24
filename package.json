@@ -4,10 +4,13 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "start:prod": "NODE_ENV=production nodemon server.js",
-    "debug": "ndb server.js"
+    "start": "node build/server.js",
+    "build": "npm run build-ts && npm run copy-static-assets",
+    "watch-node": "nodemon build/server.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "copy-static-assets": "ts-node copyStaticAssets.ts"
   },
   "author": "",
   "license": "ISC",
@@ -36,6 +39,10 @@
     "xss-clean": "^0.1.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.2",
+    "@types/node": "^13.1.4",
+    "@types/shelljs": "^0.8.6",
+    "concurrently": "^5.0.2",
     "eslint": "^6.1.0",
     "eslint-config-airbnb": "^17.1.1",
     "eslint-config-prettier": "^6.0.0",
@@ -44,7 +51,10 @@
     "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-react": "^7.14.3",
-    "prettier": "^1.18.2"
+    "prettier": "^1.18.2",
+    "shelljs": "^0.8.3",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.4"
   },
   "engines": {
     "node": "^10"
