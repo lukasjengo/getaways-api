@@ -1,8 +1,45 @@
-const mongoose = require('mongoose');
-const slugify = require('slugify');
-const validator = require('validator');
+// @ts-nocheck
+import mongoose from 'mongoose';
+import slugify from 'slugify';
+import validator from 'validator';
 
-// const User = require('./userModel');
+export interface Tour extends mongoose.Document {
+  name: string;
+  slug: string;
+  duration: number;
+  maxGroupSize: number;
+  difficulty: string;
+  ratingsAverage: number;
+  ratingsQuantity: number;
+  price: number;
+  priceDiscount: number;
+  summary: string;
+  description: string;
+  images: [string];
+  createdAt: Date;
+  startDates: [Date];
+  secretTour: boolean;
+  startLocation: {
+    type: string;
+    coordinates: number[];
+    description: string;
+    address: string;
+  };
+  locations: [
+    {
+      type: string;
+      coordinates: number[];
+      description: string;
+      day: number;
+    }
+  ];
+  guides: [
+    {
+      type: mongoose.Schema.Types.ObjectId;
+      ref: 'User';
+    }
+  ];
+}
 
 const tourSchema = new mongoose.Schema(
   {
@@ -38,7 +75,7 @@ const tourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be below 5.0'],
-      set: val => Math.round(val * 10) / 10
+      set: (val: number) => Math.round(val * 10) / 10
     },
     ratingsQuantity: {
       type: Number,
@@ -51,7 +88,7 @@ const tourSchema = new mongoose.Schema(
     priceDiscount: {
       type: Number,
       validate: {
-        validator: function(val) {
+        validator: function(val: number): boolean {
           // this only points to current doc on NEW document creation
           return val < this.price;
         },
@@ -110,7 +147,7 @@ const tourSchema = new mongoose.Schema(
     ],
     guides: [
       {
-        type: mongoose.Schema.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       }
     ]
@@ -158,4 +195,4 @@ tourSchema.pre(/^find/, function(next) {
 
 const Tour = mongoose.model('Tour', tourSchema);
 
-module.exports = Tour;
+export default Tour;
