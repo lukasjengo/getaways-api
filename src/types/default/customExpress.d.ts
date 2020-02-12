@@ -1,8 +1,6 @@
 declare namespace Express {
   export interface Request {
-    user: {
-      id: string;
-    };
+    user: import('../../models/userModel').IUser;
     files: {
       [fieldname: string]: Express.Multer.File[];
     };

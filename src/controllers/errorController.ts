@@ -1,18 +1,21 @@
+import { CastError, Error } from 'mongoose';
+import { Request, Response, NextFunction } from 'express';
+
 const AppError = require('../utils/appError');
 
-const handleCastErrorDB = err => {
+const handleCastErrorDB = (err: CastError) => {
   const message = `Invalid ${err.path}: ${err.value}.`;
   return new AppError(message, 400);
 };
 
-const handleDuplicateFieldsDB = err => {
+const handleDuplicateFieldsDB = (err: any) => {
   const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
   const message = `Duplicate field value: ${value}. Please use another value.`;
   return new AppError(message, 400);
 };
 
-const handleValidationErrorDB = err => {
-  const errors = Object.values(err.errors).map(el => el.message);
+const handleValidationErrorDB = (err: any) => {
+  const errors = Object.values(err.errors).map((el: any) => el.message);
 
   const message = `Invalid input data. ${errors.join('. ')}`;
   return new AppError(message, 400);
@@ -24,7 +27,7 @@ const handleJWTError = () =>
 const handleJWTExpiredError = () =>
   new AppError('Token expired. Please log in again.', 401);
 
-const sendErrorDev = (err, req, res) => {
+const sendErrorDev = (err: any, req: Request, res: Response) => {
   // API
   if (req.originalUrl.startsWith('/api')) {
     return res.status(err.statusCode).json({
@@ -43,7 +46,7 @@ const sendErrorDev = (err, req, res) => {
   });
 };
 
-const sendErrorProd = (err, req, res) => {
+const sendErrorProd = (err: any, req: Request, res: Response) => {
   // API
   if (req.originalUrl.startsWith('/api')) {
     // Operational, trusted error: send msg to the client
@@ -82,7 +85,7 @@ const sendErrorProd = (err, req, res) => {
   });
 };
 
-module.exports = (err, req, res, next) => {
+export default (err: any, req: Request, res: Response, next: NextFunction) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 

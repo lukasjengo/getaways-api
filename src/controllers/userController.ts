@@ -5,8 +5,7 @@ import User from '../models/userModel';
 
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
-
-import * as factory from './handlerFactory';
+import APIFeatures from '../utils/apiFeatures';
 
 import { Request, Response, NextFunction } from 'express';
 
@@ -116,8 +115,65 @@ export const createUser = (req: Request, res: Response) => {
   });
 };
 
-export const getAllUsers = factory.getAll(User);
-export const getUser = factory.getOne(User);
+export const getAllUsers = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const features = new APIFeatures(User.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+    const users = await features.query;
+
+    res.status(200).json({
+      status: 'success',
+      results: users.length,
+      data: users
+    });
+  }
+);
+export const getUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return next(new AppError('No user found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: user
+    });
+  }
+);
 // Do not update passwords with this
-export const updateUser = factory.updateOne(User);
-export const deleteUser = factory.deleteOne(User);
+export const updateUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!user) {
+      return next(new AppError('No user found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: user
+    });
+  }
+);
+export const deleteUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) {
+      return next(new AppError('No user found with that ID', 404));
+    }
+
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
+  }
+);

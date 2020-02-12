@@ -1,9 +1,8 @@
-// @ts-nocheck
 import mongoose from 'mongoose';
 import slugify from 'slugify';
 import validator from 'validator';
 
-export interface Tour extends mongoose.Document {
+interface ITourSchema extends mongoose.Document {
   name: string;
   slug: string;
   duration: number;
@@ -41,7 +40,11 @@ export interface Tour extends mongoose.Document {
   ];
 }
 
-const tourSchema = new mongoose.Schema(
+export interface ITourModel extends mongoose.Model<ITour> {}
+
+export interface ITour extends ITourSchema {}
+
+const tourSchema = new mongoose.Schema<ITour>(
   {
     name: {
       type: String,
@@ -93,7 +96,7 @@ const tourSchema = new mongoose.Schema(
           return val < this.price;
         },
         message: 'Discount price ({VALUE}) should be lower than regular price'
-      }
+      } as any
     },
     summary: {
       type: String,
@@ -163,7 +166,7 @@ tourSchema.index({ slug: 1 });
 // Required for geospatial queries and aggregation geoNear query
 tourSchema.index({ startLocation: '2dsphere' });
 
-tourSchema.virtual('durationWeeks').get(function() {
+tourSchema.virtual('durationWeeks').get(function(this: ITour) {
   return this.duration / 7;
 });
 
@@ -175,17 +178,17 @@ tourSchema.virtual('reviews', {
 });
 
 // DOCUMENT MIDDLEWARE: runs before .save() and .create()
-tourSchema.pre('save', function(next) {
+tourSchema.pre<ITour>('save', function(next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
 
-tourSchema.pre(/^find/, function(next) {
+tourSchema.pre<ITourModel>(/^find/, function(next) {
   this.find({ secretTour: { $ne: true } });
   next();
 });
 
-tourSchema.pre(/^find/, function(next) {
+tourSchema.pre<ITour>(/^find/, function(next) {
   this.populate({
     path: 'guides',
     select: '-__v -passwordChangedAt'
@@ -193,6 +196,6 @@ tourSchema.pre(/^find/, function(next) {
   next();
 });
 
-const Tour = mongoose.model('Tour', tourSchema);
+const Tour = mongoose.model<ITour, ITourModel>('Tour', tourSchema);
 
 export default Tour;

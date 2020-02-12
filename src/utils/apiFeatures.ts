@@ -1,5 +1,18 @@
+import { Query } from 'mongoose';
+import { Request } from 'express';
+
+interface IQueryString {
+  page: any;
+  sort: any;
+  limit: any;
+  fields: any;
+}
+
+// TODO: TYPE OF QUERY SHOULD BE OF ALL POSSIBLE DOCUMENTS
 class APIFeatures {
-  constructor(query, queryString) {
+  query: Query<any>;
+  private queryString: IQueryString;
+  constructor(query: Query<any>, queryString: IQueryString) {
     this.query = query;
     this.queryString = queryString;
   }
@@ -7,7 +20,7 @@ class APIFeatures {
   filter() {
     const queryObj = { ...this.queryString };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach(el => delete queryObj[el]);
+    excludedFields.forEach(el => delete (queryObj as any)[el]);
 
     // Advanced filtering
     let queryStr = JSON.stringify(queryObj);
@@ -50,4 +63,4 @@ class APIFeatures {
   }
 }
 
-module.exports = APIFeatures;
+export default APIFeatures;

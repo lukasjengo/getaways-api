@@ -1,8 +1,7 @@
-// @ts-nocheck
-import mongoose, { Model, Query } from 'mongoose';
+import mongoose from 'mongoose';
 import Tour from './tourModel';
 
-interface ReviewSchema extends mongoose.Document {
+interface IReviewSchema extends mongoose.Document {
   review: string;
   rating: number;
   user: typeof mongoose.Schema.Types.ObjectId;
@@ -10,17 +9,13 @@ interface ReviewSchema extends mongoose.Document {
   createdAt: Date;
 }
 
-export interface Review extends ReviewSchema {
-  // extend with virtuals and schema methods for schema.methods
-  // calcAverageRatings: (tourID: string) => Promise<Review>;
-  // _id: typeof mongoose.Schema.Types.ObjectId;
+export interface IReview extends IReviewSchema {}
+
+export interface IReviewModel extends mongoose.Model<IReview> {
+  calcAverageRatings: (tourID: string) => Promise<IReview>;
 }
 
-export interface ReviewModel extends Model<Review> {
-  calcAverageRatings: (tourID: string) => Promise<Review>;
-}
-
-const reviewSchema = new mongoose.Schema(
+const reviewSchema = new mongoose.Schema<IReview>(
   {
     review: {
       type: String,
@@ -54,7 +49,7 @@ const reviewSchema = new mongoose.Schema(
 );
 
 // This refers to current query
-reviewSchema.pre<Review>(/^find/, function(next) {
+reviewSchema.pre<IReview>(/^find/, function(next) {
   this.populate({ path: 'user', select: 'name photo' });
   next();
 });
@@ -89,22 +84,22 @@ reviewSchema.statics.calcAverageRatings = async function(tourId: string) {
 // 1 user can only post 1 review on the same tour
 reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
 
-reviewSchema.post<Review>('save', function(this: ReviewSchema) {
+reviewSchema.post<IReview>('save', function(this: any) {
   // this points to current review
   this.constructor.calcAverageRatings(this.tour);
 });
 
 // For findByIdAndUpdate and findByIdAndDelete
-reviewSchema.pre<ReviewModel>(/^findOneAnd/, async function(next) {
+reviewSchema.pre<IReviewModel>(/^findOneAnd/, async function(this: any, next) {
   // this points to current query
   this.rev = await this.findOne();
   next();
 });
 
-reviewSchema.post(/^findOneAnd/, async function() {
+reviewSchema.post(/^findOneAnd/, async function(this: any) {
   await this.rev.constructor.calcAverageRatings(this.rev.tour);
 });
 
-const Review = mongoose.model<Review, ReviewModel>('Review', reviewSchema);
+const Review = mongoose.model<IReview, IReviewModel>('Review', reviewSchema);
 
 export default Review;

@@ -6,8 +6,7 @@ import Tour from '../models/tourModel';
 
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
-
-import * as factory from './handlerFactory';
+import APIFeatures from '../utils/apiFeatures';
 
 const multerStorage = multer.memoryStorage();
 
@@ -28,12 +27,12 @@ const upload = multer({
   fileFilter: multerFilter
 });
 
-exports.uploadTourImages = upload.fields([
+export const uploadTourImages = upload.fields([
   { name: 'imageCover', maxCount: 1 },
   { name: 'images', maxCount: 3 }
 ]);
 
-exports.resizeTourImages = catchAsync(
+export const resizeTourImages = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req.files.imageCover || !req.files.images) return next();
 
@@ -65,24 +64,96 @@ exports.resizeTourImages = catchAsync(
   }
 );
 
-exports.aliasTopTours = (req: Request, res: Response, next: NextFunction) => {
+export const aliasTopTours = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   req.query.limit = '5';
   req.query.sort = '-ratingsAverage,price';
   req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
   next();
 };
 
-exports.getAllTours = factory.getAll(Tour);
+export const getAllTours = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+    const tours = await features.query;
 
-exports.getTour = factory.getOne(Tour, { path: 'reviews' });
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: tours
+    });
+  }
+);
 
-exports.createTour = factory.createOne(Tour);
+export const getTour = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tour = await Tour.findById(req.params.id).populate({
+      path: 'reviews'
+    });
 
-exports.updateTour = factory.updateOne(Tour);
+    if (!tour) {
+      return next(new AppError('No tour found with that ID', 404));
+    }
 
-exports.deleteTour = factory.deleteOne(Tour);
+    res.status(200).json({
+      status: 'success',
+      data: tour
+    });
+  }
+);
 
-exports.getTourStats = catchAsync(
+export const createTour = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tour = await Tour.create(req.body);
+
+    res.status(201).json({
+      status: 'success',
+      data: tour
+    });
+  }
+);
+
+export const updateTour = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!tour) {
+      return next(new AppError('No tour found with that ID', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: tour
+    });
+  }
+);
+
+export const deleteTour = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tour = await Tour.findByIdAndDelete(req.params.id);
+
+    if (!tour) {
+      return next(new AppError('No tour found with that ID', 404));
+    }
+
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
+  }
+);
+
+export const getTourStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const stats = await Tour.aggregate([
       {
@@ -113,7 +184,7 @@ exports.getTourStats = catchAsync(
   }
 );
 
-exports.getMonthlyPlan = catchAsync(
+export const getMonthlyPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const year = +req.params.year * 1;
 
@@ -162,7 +233,7 @@ exports.getMonthlyPlan = catchAsync(
 );
 
 // /tours-within/400/center/34.107870,-118.089951/unit/mi
-exports.getToursWithin = catchAsync(
+export const getToursWithin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { distance, latlng, unit } = req.params;
     const [lat, lng] = latlng.split(',');
@@ -192,7 +263,7 @@ exports.getToursWithin = catchAsync(
   }
 );
 
-exports.getDistances = catchAsync(
+export const getDistances = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { latlng, unit } = req.params;
     const [lat, lng] = latlng.split(',');

@@ -1,6 +1,6 @@
-const express = require('express');
-const reviewController = require('../controllers/reviewController');
-const authController = require('../controllers/authController');
+import express from 'express';
+import * as reviewController from '../controllers/reviewController';
+import * as authController from '../controllers/authController';
 
 const router = express.Router({ mergeParams: true });
 
@@ -27,4 +27,4 @@ router
     reviewController.updateReview
   );
 
-module.exports = router;
+export default router;

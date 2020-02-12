@@ -1,9 +1,15 @@
-const nodemailer = require('nodemailer');
-const pug = require('pug');
-const htmlToText = require('html-to-text');
+import nodemailer from 'nodemailer';
+import pug from 'pug';
+import htmlToText from 'html-to-text';
+import { IUser } from '../models/userModel';
 
-module.exports = class Email {
-  constructor(user, url) {
+export class Email {
+  private to: string;
+  private firstName: string;
+  private url: string;
+  private from: string;
+
+  constructor(user: IUser, url: string) {
     this.to = user.email;
     this.firstName = user.name.split(' ')[0];
     this.url = url;
@@ -24,7 +30,7 @@ module.exports = class Email {
 
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
+      port: Number(process.env.EMAIL_PORT),
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD
@@ -33,7 +39,7 @@ module.exports = class Email {
   }
 
   // Send the actual email
-  async send(template, subject) {
+  async send(template: string, subject: string) {
     // 1. Render HTML based on the pug template
     const html = pug.renderFile(`${__dirname}/views/emails/${template}.pug`, {
       firstName: this.firstName,
@@ -64,4 +70,4 @@ module.exports = class Email {
       'Your password reset token (valid for only 10 minutes)'
     );
   }
-};
+}
