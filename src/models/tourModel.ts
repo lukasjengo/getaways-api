@@ -1,50 +1,59 @@
 import mongoose from 'mongoose';
 import slugify from 'slugify';
-import validator from 'validator';
+import { IUser } from './userModel';
+
+type TDifficulty = 'easy' | 'medium' | 'difficult';
 
 interface ITourSchema extends mongoose.Document {
   name: string;
   slug: string;
   duration: number;
   maxGroupSize: number;
-  difficulty: string;
+  difficulty: TDifficulty;
   ratingsAverage: number;
-  ratingsQuantity: number;
+  ratingsQuantity?: number;
   price: number;
-  priceDiscount: number;
+  priceDiscount?: number;
   summary: string;
-  description: string;
-  images: [string];
-  createdAt: Date;
-  startDates: [Date];
-  secretTour: boolean;
-  startLocation: {
+  description?: string;
+  images?: [string];
+  createdAt?: Date;
+  startDates?: [Date];
+  secretTour?: boolean;
+  startLocation?: {
     type: string;
     coordinates: number[];
     description: string;
     address: string;
   };
-  locations: [
+  locations?: [
     {
       type: string;
       coordinates: number[];
+      address: string;
       description: string;
       day: number;
     }
   ];
-  guides: [
-    {
-      type: mongoose.Schema.Types.ObjectId;
-      ref: 'User';
-    }
-  ];
+}
+
+interface ITourBase extends ITourSchema {
+  // Virtuals and schema methods
+  durationWeeks: number;
+  reviews: mongoose.Schema.Types.ObjectId;
+}
+
+export interface ITour extends ITourBase {
+  guides: [IUser['_id']];
+}
+
+export interface ITourPopulated extends ITourBase {
+  guides: [IUser];
 }
 
 export interface ITourModel extends mongoose.Model<ITour> {}
 
-export interface ITour extends ITourSchema {}
-
-const tourSchema = new mongoose.Schema<ITour>(
+const tourSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -183,12 +192,12 @@ tourSchema.pre<ITour>('save', function(next) {
   next();
 });
 
-tourSchema.pre<ITourModel>(/^find/, function(next) {
+tourSchema.pre<mongoose.Query<IUser>>(/^find/, function(next) {
   this.find({ secretTour: { $ne: true } });
   next();
 });
 
-tourSchema.pre<ITour>(/^find/, function(next) {
+tourSchema.pre<mongoose.Query<IUser>>(/^find/, function(next) {
   this.populate({
     path: 'guides',
     select: '-__v -passwordChangedAt'

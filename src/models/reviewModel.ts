@@ -1,18 +1,26 @@
 import mongoose from 'mongoose';
-import Tour from './tourModel';
+import Tour, { ITour } from './tourModel';
+import { IUser } from './userModel';
 
 interface IReviewSchema extends mongoose.Document {
   review: string;
   rating: number;
-  user: typeof mongoose.Schema.Types.ObjectId;
-  tour: typeof mongoose.Schema.Types.ObjectId;
-  createdAt: Date;
+  createdAt?: Date;
 }
 
-export interface IReview extends IReviewSchema {}
+export interface IReview extends IReviewSchema {
+  user: IUser['_id'];
+  tour: ITour['_id'];
+}
+
+export interface IReveiwPopulated extends IReview {
+  user: IUser;
+  tour: ITour;
+}
 
 export interface IReviewModel extends mongoose.Model<IReview> {
-  calcAverageRatings: (tourID: string) => Promise<IReview>;
+  // Static methods
+  calcAverageRatings: (tourID: string) => Promise<IReveiwPopulated>;
 }
 
 const reviewSchema = new mongoose.Schema<IReview>(
@@ -48,7 +56,7 @@ const reviewSchema = new mongoose.Schema<IReview>(
   }
 );
 
-// This refers to current query
+// This refers to current query document
 reviewSchema.pre<IReview>(/^find/, function(next) {
   this.populate({ path: 'user', select: 'name photo' });
   next();
@@ -90,13 +98,13 @@ reviewSchema.post<IReview>('save', function(this: any) {
 });
 
 // For findByIdAndUpdate and findByIdAndDelete
-reviewSchema.pre<IReviewModel>(/^findOneAnd/, async function(this: any, next) {
+reviewSchema.pre<IReview>(/^findOneAnd/, async function(this: any, next) {
   // this points to current query
   this.rev = await this.findOne();
   next();
 });
 
-reviewSchema.post(/^findOneAnd/, async function(this: any) {
+reviewSchema.post<IReview>(/^findOneAnd/, async function(this: any) {
   await this.rev.constructor.calcAverageRatings(this.rev.tour);
 });
 

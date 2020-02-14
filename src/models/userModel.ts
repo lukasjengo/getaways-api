@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
 
+export type TUserRoles = 'user' | 'guide' | 'lead-guide' | 'admin';
+
 interface IUserSchema extends mongoose.Document {
   name: string;
   email: string;
@@ -10,23 +12,33 @@ interface IUserSchema extends mongoose.Document {
   role: TUserRoles;
   password?: string;
   passwordConfirm?: string;
-  passwordChangedAt: Date;
+  passwordChangedAt?: Date;
   passwordResetToken?: string;
-  passwordResetExpires?: Date | number;
+  passwordResetExpires?: Date;
   active: boolean;
 }
-export interface IUserModel extends mongoose.Model<IUser> {}
 
 export interface IUser extends IUserSchema {
-  changedPasswordAfter: (JWTTimestamp: number) => boolean;
-  createPasswordResetToken: () => string;
+  // Virtuals and schema methods
   correctPassword: (
     candidatePassword: string,
     userPassword: string
   ) => Promise<boolean>;
+  changedPasswordAfter: (JWTTimestamp: number) => boolean;
+  createPasswordResetToken: () => string;
 }
 
-export type TUserRoles = 'user' | 'guide' | 'lead-guide' | 'admin';
+// export interface IUser extends IUserBase {
+//   // For ObjectID refs
+//   // company: ICompany["_id"];
+// }
+
+// export interface IUserPopulated extends IUserBase {
+//   // refs
+//   // company: ICompany;
+// }
+
+export interface IUserModel extends mongoose.Model<IUser> {}
 
 const userSchema = new mongoose.Schema<IUser>({
   name: {
@@ -89,13 +101,13 @@ userSchema.pre<IUser>('save', async function(next) {
 
 userSchema.pre<IUser>('save', function(next) {
   if (!this.isModified('password') || this.isNew) return next();
-  // TODO: test if works
+
   const now = new Date();
   this.passwordChangedAt = new Date(now.getTime() - 1000);
   next();
 });
 
-userSchema.pre<IUserModel>(/^find/, function(next) {
+userSchema.pre<mongoose.Query<IUser>>(/^find/, function(next) {
   // this points to the current query
   this.find({ active: { $ne: false } });
   next();
@@ -126,7 +138,8 @@ userSchema.methods.createPasswordResetToken = function() {
     .update(resetToken)
     .digest('hex');
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  const now = new Date();
+  this.passwordResetExpires = new Date(now.getTime() + 10 * 60 * 1000);
 
   return resetToken;
 };
