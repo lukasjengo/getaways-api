@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, Express } from 'express';
 import multer from 'multer';
 import sharp from 'sharp';
 
@@ -34,11 +34,13 @@ export const uploadTourImages = upload.fields([
 
 export const resizeTourImages = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.files.imageCover || !req.files.images) return next();
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    if (!files.imageCover || !files.images) return next();
 
     // Cover image
     req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
-    await sharp(req.files.imageCover[0].buffer)
+    await sharp(files.imageCover[0].buffer)
       .resize(2000, 1333)
       .toFormat('jpeg')
       .jpeg({ quality: 90 })
@@ -47,7 +49,7 @@ export const resizeTourImages = catchAsync(
     // Other images
     req.body.images = [];
     await Promise.all(
-      req.files.images.map(async (file, index) => {
+      files.images.map(async (file, index) => {
         const filename = `tour-${req.params.id}-${Date.now()}-${index +
           1}.jpeg`;
         await sharp(file.buffer)
